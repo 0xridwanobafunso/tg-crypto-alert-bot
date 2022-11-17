@@ -1,15 +1,12 @@
 const { Telegraf } = require('telegraf')
 const { redis } = require('../helpers/redis')
 const colors = require('colors')
-
-const dotenv = require('dotenv')
-
-dotenv.config({ path: __dirname + '../../.env' })
+const env = require('../env')
 
 const { getData } = require('../binance/getData')
 
 // connect to TG as bot
-const bot = new Telegraf(process.env.BOT_TOKEN)
+const bot = new Telegraf(env.BOT_TOKEN)
 
 exports.processor = async (job, done) => {
   let { id, pair, timeframe, interval, format, type } = job.data

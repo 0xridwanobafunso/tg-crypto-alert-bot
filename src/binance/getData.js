@@ -1,12 +1,9 @@
 const Binance = require('node-binance-api')
-const dotenv = require('dotenv')
 const BigNumber = require('bignumber.js')
-
-// load env
-dotenv.config({ path: __dirname + '../../.env' })
+const env = require('../env')
 
 const binance = new Binance().options({
-  APIKEY: process.env.BINANCE_API_KEY,
+  APIKEY: env.BINANCE_API_KEY,
   //   APISECRET: '<secret>',
 })
 

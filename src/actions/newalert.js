@@ -1,10 +1,8 @@
 const Queue = require('bull')
-const dotenv = require('dotenv')
 const { writeFile, readFile } = require('fs/promises')
+const env = require('../env')
 const { join } = require('path')
 const colors = require('colors')
-
-dotenv.config({ path: __dirname + '../../.env' })
 
 const {
   getIntervalAndTimeframe,
@@ -49,108 +47,112 @@ exports.channel = async (ctx, redis) => {
             let interval = text[6]
             let format = text[8]
 
-            const isValidPair = pair.split(',').every((value, index, array) => {
-              return getPairAndFormat.pair.includes(value) ? true : false
-            })
-
-            if (isValidPair) {
-              let { id, title, username, type } = ctx.update.message.chat
-
-              // read alerts from file
-              let alerts = JSON.parse(
-                await readFile(join(__dirname, '../db/alerts.json'), {
-                  encoding: 'utf8',
+            if (pair.split(',').length <= 10) {
+              const isValidPair = pair
+                .split(',')
+                .every((value, index, array) => {
+                  return getPairAndFormat.pair.includes(value) ? true : false
                 })
-              )
 
-              if (
-                !alerts.includes(
-                  `alert_${id}_${pair}_${timeframe}_${interval}_${format}`
+              if (isValidPair) {
+                let { id, title, username, type } = ctx.update.message.chat
+
+                // read alerts from file
+                let alerts = JSON.parse(
+                  await readFile(join(__dirname, '../db/alerts.json'), {
+                    encoding: 'utf8',
+                  })
                 )
-              ) {
-                // create alert queue
-                const alert = new Queue(
-                  `alert_${id}_${pair}_${timeframe}_${interval}_${format}`,
-                  {
-                    redis: {
-                      host: process.env.REDIS_HOST,
-                      port: process.env.REDIS_PORT,
-                      password: process.env.REDIS_PASSWORD,
-                    },
+
+                if (
+                  !alerts.includes(
+                    `alert_${id}_${pair}_${timeframe}_${interval}_${format}`
+                  )
+                ) {
+                  // create alert queue
+                  const alert = new Queue(
+                    `alert_${id}_${pair}_${timeframe}_${interval}_${format}`,
+                    {
+                      redis: {
+                        host: env.REDIS_HOST,
+                        port: env.REDIS_PORT,
+                        password: env.REDIS_PASSWORD,
+                      },
+                    }
+                  )
+
+                  // split pairs into array
+                  let _pair = pair.split(',')
+
+                  for (let __p of _pair) {
+                    // current price, volume, tps, and ats before creating alert
+                    const { price, volume, tps, ats } =
+                      await getOnlyPriceAndVolume(__p, timeframe)
+
+                    // save current price, volume, tps, and ats to redis before creating alert
+                    await redis.set(
+                      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_price`,
+                      price
+                    )
+                    await redis.set(
+                      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_volume`,
+                      volume
+                    )
+                    await redis.set(
+                      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_tps`,
+                      tps
+                    )
+                    await redis.set(
+                      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_ats`,
+                      ats
+                    )
                   }
-                )
 
-                // split pairs into array
-                let _pair = pair.split(',')
-
-                for (let __p of _pair) {
-                  // current price, volume, tps, and ats before creating alert
-                  const { price, volume, tps, ats } =
-                    await getOnlyPriceAndVolume(__p, timeframe)
-
-                  // save current price, volume, tps, and ats to redis before creating alert
-                  await redis.set(
-                    `alert_${id}_${__p}_${timeframe}_${interval}_${format}_price`,
-                    price
-                  )
-                  await redis.set(
-                    `alert_${id}_${__p}_${timeframe}_${interval}_${format}_volume`,
-                    volume
-                  )
-                  await redis.set(
-                    `alert_${id}_${__p}_${timeframe}_${interval}_${format}_tps`,
-                    tps
-                  )
-                  await redis.set(
-                    `alert_${id}_${__p}_${timeframe}_${interval}_${format}_ats`,
-                    ats
-                  )
-                }
-
-                // process new alert
-                alert.process(processor)
-                alert.add(
-                  {
-                    // pair details
-                    pair,
-                    timeframe,
-                    interval,
-                    format,
-                    // channel details
-                    id,
-                    title,
-                    username,
-                    type,
-                  },
-                  {
-                    repeat: {
-                      every: getIntervalAndTimeframe.seconds[interval],
+                  // process new alert
+                  alert.process(processor)
+                  alert.add(
+                    {
+                      // pair details
+                      pair,
+                      timeframe,
+                      interval,
+                      format,
+                      // channel details
+                      id,
+                      title,
+                      username,
+                      type,
                     },
-                  }
-                )
+                    {
+                      repeat: {
+                        every: getIntervalAndTimeframe.seconds[interval],
+                      },
+                    }
+                  )
 
-                // add new alert
-                alerts.push(
-                  `alert_${id}_${pair}_${timeframe}_${interval}_${format}`
-                )
+                  // add new alert
+                  alerts.push(
+                    `alert_${id}_${pair}_${timeframe}_${interval}_${format}`
+                  )
 
-                // write new alert to file
-                await writeFile(
-                  join(__dirname, '../db/alerts.json'),
-                  JSON.stringify(alerts)
-                )
+                  // write new alert to file
+                  await writeFile(
+                    join(__dirname, '../db/alerts.json'),
+                    JSON.stringify(alerts)
+                  )
 
-                console.log(
-                  `[BOT]: Alert created for alert_${id}_${pair}_${timeframe}_${interval}_${format}`
-                    .green.bold.underline
-                )
+                  console.log(
+                    `[BOT]: Alert created for alert_${id}_${pair}_${timeframe}_${interval}_${format}`
+                      .green.bold.underline
+                  )
 
-                // send bot reply
-                await ctx.reply(
-                  `${pair}(${timeframe}) alert created. This channel will receive alert every ${interval}. Thanks :)`
-                )
-              } else
-                await ctx.reply(`${pair} alert has been created previously`)
+                  // send bot reply
+                  await ctx.reply(
+                    `${pair}(${timeframe}) alert created. This channel will receive alert every ${interval}. Thanks :)`
+                  )
+                } else
+                  await ctx.reply(`${pair} alert has been created previously`)
+              } else await ctx.reply('Use command: /help')
             } else await ctx.reply('Use command: /help')
           } else await ctx.reply('Use command: /help')
         } else await ctx.reply('Use command: /help')

@@ -1,5 +1,5 @@
-const { Telegraf } = require('telegraf')
-const dotenv = require('dotenv')
+;const { Telegraf } = require('telegraf')
+const env = require('./env')
 
 // import commands
 const { start } = require('./commands/start')
@@ -13,14 +13,11 @@ const { redis } = require('./helpers/redis')
 // import alert re instalization
 const { reInstantiate } = require('./helpers/reInstantiate')
 
-// load env
-dotenv.config({ path: __dirname + '/.env' })
-
 // re instantiate alert if app eventually reloads
 reInstantiate()
 
 // connect to TG as bot
-const bot = new Telegraf(process.env.BOT_TOKEN)
+const bot = new Telegraf(env.BOT_TOKEN)
 
 bot.on('channel_post', (ctx, next) => {
   ctx.update.message = ctx.update.channel_post
