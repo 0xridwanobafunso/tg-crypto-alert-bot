@@ -3,9 +3,12 @@ exports.channel = async (ctx) => {
     let { id } = ctx.update.message.chat
 
     if (
-      ['-1001896329721', '-1001688156359', '-1001608994895'].includes(
-        id.toString()
-      )
+      [
+        '-1001896329721',
+        '-1001688156359',
+        '-1001608994895',
+        '-1001848903622',
+      ].includes(id.toString())
     ) {
       await ctx.reply('Under development. Bye :)')
     } else

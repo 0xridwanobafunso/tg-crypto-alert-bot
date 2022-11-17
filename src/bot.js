@@ -22,7 +22,6 @@ reInstantiate()
 // connect to TG as bot
 const bot = new Telegraf(process.env.BOT_TOKEN)
 
-bot.on('')
 bot.on('channel_post', (ctx, next) => {
   ctx.update.message = ctx.update.channel_post
 

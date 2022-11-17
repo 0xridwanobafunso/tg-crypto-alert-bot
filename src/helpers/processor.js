@@ -29,47 +29,49 @@ exports.processor = async (job, done) => {
     last_name = job.data.last_name
   }
 
-  // get oldprice and oldvolume from redis
-  let oldprice = await redis.get(
-    `alert_${id}_${pair}_${timeframe}_${interval}_${format}_price`
-  )
-  let oldvolume = await redis.get(
-    `alert_${id}_${pair}_${timeframe}_${interval}_${format}_volume`
-  )
-  let oldtps = await redis.get(
-    `alert_${id}_${pair}_${timeframe}_${interval}_${format}_tps`
-  )
-  let oldats = await redis.get(
-    `alert_${id}_${pair}_${timeframe}_${interval}_${format}_ats`
-  )
+  // split pairs into array
+  let _pair = pair.split(',')
+  let message = ``
 
-  let res = await getData(pair, timeframe, oldprice, oldvolume, oldtps, oldats)
+  for (let __p of _pair) {
+    // get oldprice and oldvolume from redis
+    let oldprice = await redis.get(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_price`
+    )
+    let oldvolume = await redis.get(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_volume`
+    )
+    let oldtps = await redis.get(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_tps`
+    )
+    let oldats = await redis.get(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_ats`
+    )
 
-  // set new price and volume from redis
-  await redis.set(
-    `alert_${id}_${pair}_${timeframe}_${interval}_${format}_price`,
-    res.price
-  )
-  await redis.set(
-    `alert_${id}_${pair}_${timeframe}_${interval}_${format}_volume`,
-    res.volume
-  )
-  await redis.set(
-    `alert_${id}_${pair}_${timeframe}_${interval}_${format}_tps`,
-    res.tps
-  )
-  await redis.set(
-    `alert_${id}_${pair}_${timeframe}_${interval}_${format}_ats`,
-    res.ats
-  )
+    let res = await getData(__p, timeframe, oldprice, oldvolume, oldtps, oldats)
 
-  // send alert with format 1
-  if (format == '1') {
-    await bot.telegram.sendMessage(
-      id,
-      `🔔${
+    // set new price and volume from redis
+    await redis.set(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_price`,
+      res.price
+    )
+    await redis.set(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_volume`,
+      res.volume
+    )
+    await redis.set(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_tps`,
+      res.tps
+    )
+    await redis.set(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_ats`,
+      res.ats
+    )
+
+    if (format == '1') {
+      message = `${message}🔔${
         res.priceState == 'Increased' ? '↗️🟢' : '↙️🔴'
-      } ${pair}(${timeframe}) alert every ${interval}\n\n1.) Price of ${
+      } ${__p}(${timeframe}) alert every ${interval}\n\n1.) Price of ${
         res.pair
       }: ${res.price} - ${res.priceState} (${
         res.percentChangeInPrice
@@ -77,17 +79,13 @@ exports.processor = async (job, done) => {
         res.tpsState
       }\n3.) ATS of ${res.pair}: ${res.ats} - ${res.atsState}\n4.) Volume: ${
         res.volume
-      } - ${res.volumeState} (${res.percentChangeInVolume}%)`
-    )
-  }
+      } - ${res.volumeState} (${res.percentChangeInVolume}%)\n\n`
+    }
 
-  // send alert with format 2
-  if (format == '2') {
-    await bot.telegram.sendMessage(
-      id,
-      `🔔${
+    if (format == '2') {
+      message = `${message}🔔${
         res.priceState == 'Increased' ? '↗️🟢' : '↙️🔴'
-      } ${pair}(${timeframe}) alert every ${interval}\n\n1.) Price of ${
+      } ${__p}(${timeframe}) alert every ${interval}\n\n1.) Price of ${
         res.pair
       }: ${oldprice}, ${res.price} - ${res.priceState} (${
         res.percentChangeInPrice
@@ -97,25 +95,24 @@ exports.processor = async (job, done) => {
         res.atsState
       }\n4.) Volume: ${res.volume} - ${res.volumeState} (${
         res.percentChangeInVolume
-      }%)`
-    )
-  }
+      }%)\n\n`
+    }
 
-  // send alert with format 3
-  if (format == '3') {
-    await bot.telegram.sendMessage(
-      id,
-      `🔔${
+    if (format == '3') {
+      message = `${message}🔔${
         res.priceState == 'Increased' ? '↗️🟢' : '↙️🔴'
-      } ${pair}(${timeframe}) alert every ${interval}\n\n1.) Price of ${
+      } ${__p}(${timeframe}) alert every ${interval}\n\n1.) Price of ${
         res.pair
       }: ${res.priceState}\n2.) TPS of ${res.pair}: ${
         res.tpsState
       }\n3.) ATS of ${res.pair}: ${res.atsState}\n4.) Volume: ${
         res.volumeState
-      }`
-    )
+      }\n\n`
+    }
   }
+
+  // send alert
+  await bot.telegram.sendMessage(id, message)
 
   // log to console
   console.log(
