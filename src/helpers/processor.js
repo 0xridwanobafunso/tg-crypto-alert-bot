@@ -2,6 +2,10 @@ const { Telegraf } = require('telegraf')
 const { redis } = require('../helpers/redis')
 const colors = require('colors')
 
+const dotenv = require('dotenv')
+
+dotenv.config({ path: __dirname + '../../.env' })
+
 const { getData } = require('../binance/getData')
 
 // connect to TG as bot
