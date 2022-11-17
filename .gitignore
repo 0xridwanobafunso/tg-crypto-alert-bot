@@ -1,6 +1,6 @@
 other.js
 node_modules
-src/test.env
+src/.env
 binance.js
 .gitignore
 test.js
