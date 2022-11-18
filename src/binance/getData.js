@@ -1,6 +1,9 @@
 const Binance = require('node-binance-api')
 const BigNumber = require('bignumber.js')
 const env = require('../env')
+const {
+  getIntervalAndTimeframe,
+} = require('../helpers/getIntervalAndTimeframe')
 
 const binance = new Binance().options({
   APIKEY: env.BINANCE_API_KEY,
@@ -68,13 +71,16 @@ exports.getData = async (
     ? `+${parseFloat(percentChangeInVolume).toFixed(5)}`
     : parseFloat(percentChangeInVolume).toFixed(5)
 
+  let tps = parseFloat(
+    new BigNumber(trades).div(getIntervalAndTimeframe.seconds[timeframe])
+  ).toFixed(5)
   let ats = parseFloat(new BigNumber(volume).div(trades)).toFixed(5)
 
   let volumeState = new BigNumber(oldvolume).lt(new BigNumber(volume))
     ? 'Increased'
     : 'Decreased'
 
-  let tpsState = new BigNumber(oldtps).lt(new BigNumber(trades))
+  let tpsState = new BigNumber(oldtps).lt(new BigNumber(tps))
     ? 'Increased'
     : 'Decreased'
 
@@ -90,7 +96,7 @@ exports.getData = async (
     percentChangeInPrice: _percentChangeInPrice,
     priceState,
     // tps and ats
-    tps: trades,
+    tps,
     tpsState,
     ats,
     atsState,
