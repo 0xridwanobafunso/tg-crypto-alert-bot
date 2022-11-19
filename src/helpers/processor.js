@@ -74,13 +74,13 @@ exports.processor = async (job, done) => {
         res.priceState == 'Increased' ? '↗️🟢' : '↙️🔴'
       } ${__p}(${timeframe}) alert every ${interval}\n\n1.) Price of ${
         res.pair
-      }: ${res.price} - ${res.priceState} (${
-        res.percentChangeInPrice
-      }%)\n2.) TPS of ${res.pair}: ${res.tps} trades - ${
-        res.tpsState
-      }\n3.) ATS of ${res.pair}: ${res.ats} - ${res.atsState}\n4.) Volume: ${
-        res.volume
-      } - ${res.volumeState} (${res.percentChangeInVolume}%)\n\n`
+      }: ${res.price} - ${res.priceState}\n2.) TPS of ${res.pair}: ${
+        res.tps
+      } trades - ${res.tpsState}\n3.) ATS of ${res.pair}: ${res.ats} - ${
+        res.atsState
+      }\n4.) Volume: ${res.volume} - ${res.volumeState} (${
+        res.percentChangeInVolume
+      }%)\n\n`
     }
 
     if (format == '2') {
@@ -92,11 +92,11 @@ exports.processor = async (job, done) => {
         res.percentChangeInPrice
       }%)\n2.) TPS of ${res.pair}: ${oldtps} trades, ${res.tps} trades - ${
         res.tpsState
-      }\n3.) ATS of ${res.pair}: ${oldats}, ${res.ats} - ${
-        res.atsState
-      }\n4.) Volume: ${res.volume} - ${res.volumeState} (${
-        res.percentChangeInVolume
-      }%)\n\n`
+      } (${res.percentChangeInTps}%)\n3.) ATS of ${res.pair}: ${oldats}, ${
+        res.ats
+      } - ${res.atsState} (${res.percentChangeInAts}%)\n4.) Volume: ${
+        res.volume
+      } - ${res.volumeState} (${res.percentChangeInVolume}%)\n\n`
     }
 
     if (format == '3') {

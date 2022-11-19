@@ -76,6 +76,22 @@ exports.getData = async (
   ).toFixed(5)
   let ats = parseFloat(new BigNumber(volume).div(trades)).toFixed(5)
 
+  let percentChangeInTps = new BigNumber(
+    new BigNumber(new BigNumber(tps).minus(new BigNumber(oldtps))).div(oldtps)
+  ).times(100)
+
+  let _percentChangeInTps = new BigNumber(tps).gt(new BigNumber(oldtps))
+    ? `+${parseFloat(percentChangeInTps).toFixed(5)}`
+    : parseFloat(percentChangeInTps).toFixed(5)
+
+  let percentChangeInAts = new BigNumber(
+    new BigNumber(new BigNumber(ats).minus(new BigNumber(oldats))).div(oldats)
+  ).times(100)
+
+  let _percentChangeInAts = new BigNumber(ats).gt(new BigNumber(oldats))
+    ? `+${parseFloat(percentChangeInAts).toFixed(5)}`
+    : parseFloat(percentChangeInAts).toFixed(5)
+
   let volumeState = new BigNumber(oldvolume).lt(new BigNumber(volume))
     ? 'Increased'
     : 'Decreased'
@@ -97,8 +113,10 @@ exports.getData = async (
     priceState,
     // tps and ats
     tps,
+    percentChangeInTps: _percentChangeInTps,
     tpsState,
     ats,
+    percentChangeInAts: _percentChangeInAts,
     atsState,
     // volume
     volume,
