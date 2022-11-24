@@ -86,8 +86,16 @@ exports.channel = async (ctx, redis) => {
 
                   for (let __p of _pair) {
                     // current price, volume, tps, and ats before creating alert
-                    const { price, volume, tps, ats } =
-                      await getOnlyPriceAndVolume(__p, timeframe)
+                    const {
+                      price,
+                      volume,
+                      tps,
+                      ats,
+                      priceState,
+                      tpsState,
+                      atsState,
+                      volumeState,
+                    } = await getOnlyPriceAndVolume(__p, timeframe)
 
                     // save current price, volume, tps, and ats to redis before creating alert
                     await redis.set(
@@ -105,6 +113,24 @@ exports.channel = async (ctx, redis) => {
                     await redis.set(
                       `alert_${id}_${__p}_${timeframe}_${interval}_${format}_ats`,
                       ats
+                    )
+
+                    // default state to decreased
+                    await redis.set(
+                      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_priceState`,
+                      priceState
+                    )
+                    await redis.set(
+                      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_tpsState`,
+                      tpsState
+                    )
+                    await redis.set(
+                      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_atsState`,
+                      atsState
+                    )
+                    await redis.set(
+                      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_volumeState`,
+                      volumeState
                     )
                   }
 

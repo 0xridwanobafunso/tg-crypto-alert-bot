@@ -34,15 +34,21 @@ exports.getOnlyPriceAndVolume = async (pair, timeframe) => {
     ignored,
   ] = last_tick
 
-  let tps = parseFloat(
-    new BigNumber(trades).div(getIntervalAndTimeframe.seconds[timeframe])
-  ).toFixed(5)
+  let tps = parseFloat(new BigNumber(trades).div(60)).toFixed(5)
   let ats = parseFloat(new BigNumber(volume).div(trades)).toFixed(5)
+
+  if (isNaN(tps)) tps = 0
+  if (isNaN(ats)) ats = 0
+  if (isNaN(volume)) volume = 0
 
   return {
     price: price[pair],
     volume,
     tps,
     ats,
+    priceState: 'Decreased',
+    tpsState: 'Decreased',
+    atsState: 'Decreased',
+    volumeState: 'Decreased',
   }
 }

@@ -71,9 +71,7 @@ exports.getData = async (
     ? `+${parseFloat(percentChangeInVolume).toFixed(5)}`
     : parseFloat(percentChangeInVolume).toFixed(5)
 
-  let tps = parseFloat(
-    new BigNumber(trades).div(getIntervalAndTimeframe.seconds[timeframe])
-  ).toFixed(5)
+  let tps = parseFloat(new BigNumber(trades).div(60)).toFixed(5)
   let ats = parseFloat(new BigNumber(volume).div(trades)).toFixed(5)
 
   let percentChangeInTps = new BigNumber(
@@ -103,6 +101,18 @@ exports.getData = async (
   let atsState = new BigNumber(oldats).lt(new BigNumber(ats))
     ? 'Increased'
     : 'Decreased'
+
+  // _percentChangeInPrice, tps, _percentChangeInTps, ats,  _percentChangeInAts,
+  // volume, _percentChangeInVolume
+  // str.slice(1)]
+  if (isNaN(tps)) tps = 0
+  if (isNaN(ats)) ats = 0
+  if (isNaN(volume)) volume = 0
+
+  if (isNaN(_percentChangeInPrice)) _percentChangeInPrice = 0
+  if (isNaN(_percentChangeInTps)) _percentChangeInTps = 0
+  if (isNaN(_percentChangeInAts)) _percentChangeInAts = 0
+  if (isNaN(_percentChangeInVolume)) _percentChangeInVolume = 0
 
   return {
     //pair

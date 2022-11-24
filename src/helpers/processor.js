@@ -49,6 +49,19 @@ exports.processor = async (job, done) => {
       `alert_${id}_${__p}_${timeframe}_${interval}_${format}_ats`
     )
 
+    let oldpriceState = await redis.get(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_priceState`
+    )
+    let oldvolumeState = await redis.get(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_volumeState`
+    )
+    let oldtpsState = await redis.get(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_tpsState`
+    )
+    let oldatsState = await redis.get(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_atsState`
+    )
+
     let res = await getData(__p, timeframe, oldprice, oldvolume, oldtps, oldats)
 
     // set new price and volume from redis
@@ -67,6 +80,24 @@ exports.processor = async (job, done) => {
     await redis.set(
       `alert_${id}_${__p}_${timeframe}_${interval}_${format}_ats`,
       res.ats
+    )
+
+    // set states
+    await redis.set(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_priceState`,
+      res.priceState
+    )
+    await redis.set(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_tpsState`,
+      res.tpsState
+    )
+    await redis.set(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_atsState`,
+      res.atsState
+    )
+    await redis.set(
+      `alert_${id}_${__p}_${timeframe}_${interval}_${format}_volumeState`,
+      res.volumeState
     )
 
     if (format == '1') {
@@ -100,20 +131,44 @@ exports.processor = async (job, done) => {
     }
 
     if (format == '3') {
-      message = `${message}🔔${
-        res.priceState == 'Increased' ? '↗️🟢' : '↙️🔴'
-      } ${__p}(${timeframe}) alert every ${interval}\n\n1.) Price of ${
-        res.pair
-      }: ${res.priceState}\n2.) TPS of ${res.pair}: ${
-        res.tpsState
-      }\n3.) ATS of ${res.pair}: ${res.atsState}\n4.) Volume: ${
-        res.volumeState
-      }\n\n`
+      let oldIncreased =
+        oldpriceState == 'Increased' &&
+        oldtpsState == 'Increased' &&
+        oldatsState == 'Increased' &&
+        oldvolumeState == 'Increased'
+
+      let newIncreased =
+        res.priceState == 'Increased' &&
+        res.tpsState == 'Increased' &&
+        res.atsState == 'Increased' &&
+        res.volumeState == 'Increased'
+
+      let oldDecreased =
+        oldpriceState == 'Decreased' &&
+        oldtpsState == 'Decreased' &&
+        oldatsState == 'Decreased' &&
+        oldvolumeState == 'Decreased'
+
+      let newDecreased =
+        res.priceState == 'Decreased' &&
+        res.tpsState == 'Decreased' &&
+        res.atsState == 'Decreased' &&
+        res.volumeState == 'Decreased'
+
+      if ((oldIncreased && newIncreased) || (oldDecreased && newDecreased)) {
+        message = `${message}🔔${
+          res.priceState == 'Increased' ? '↗️🟢' : '↙️🔴'
+        } ${__p}(${timeframe}) alert\n\n1.) Price of ${res.pair}: ${
+          res.priceState
+        }\n2.) TPS of ${res.pair}: ${res.tpsState}\n3.) ATS of ${res.pair}: ${
+          res.atsState
+        }\n4.) Volume: ${res.volumeState}\n\n`
+      }
     }
   }
 
-  // send alert
-  await bot.telegram.sendMessage(id, message)
+  // if message is not empty
+  if (message != '') await bot.telegram.sendMessage(id, message)
 
   // log to console
   console.log(
